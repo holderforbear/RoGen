@@ -1,0 +1,29 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><meta name="color-scheme" content="dark light"><link rel="stylesheet" href="popup.css"></head>
+<body>
+  <header class="top">
+    <span class="mark"><img src="icons/logo.png" alt=""></span>
+    <div class="brand"><b>RoGen</b><small id="ver"></small></div>
+  </header>
+
+  <a class="me" id="me" href="#">
+    <span class="av"><img id="av" alt=""></span>
+    <span class="who"><b id="dn">Not signed in</b><small id="un">Log in on roblox.com</small></span>
+    <svg class="go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+  </a>
+
+  <nav class="grid">
+    <button data-v="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Dashboard</button>
+    <button data-v="discover"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg>Discover</button>
+    <button data-v="friends"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 010 6.8M18 14.8c1.9.8 3.1 2.6 3.5 5.2"/></svg>Friends</button>
+    <button data-v="spending"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5l8 4.6v9.8l-8 4.6-8-4.6V7.1z"/><path d="M12 8.2l3.6 2.1v3.4L12 15.8l-3.6-2.1v-3.4z"/></svg>Spending</button>
+    <button data-v="playtime"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Playtime</button>
+    <button data-v="lookup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.3-4.3"/></svg>Lookup</button>
+  </nav>
+
+  <button id="open" class="cta">Open RoGen</button>
+  <a id="settings" href="#">Settings</a>
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "app": "RoGen badges",
+  "version": 1,
+  "owner": 10980633414,
+  "grants": {
+    "10980633414": [
+      "high-status",
+      "high-donator",
+      "friends-of-owner",
+      "donator"
+    ],
+    "123456789": [
+      "donator"
+    ]
+  }
+}

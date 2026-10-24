@@ -1,0 +1,37 @@
+RoGen BADGES: put a person's user ID under the badge you want them to have.
+=============================================================================
+
+HOW IT WORKS
+  - One user ID per line, under the badge's [heading].
+  - A user ID is the number in someone's profile link: roblox.com/users/123456789/profile
+  - To give a person two badges, put their ID under both headings.
+  - To take a badge away, delete their ID from that heading.
+  - You can write a note after an ID, or start a line with # to write a comment.
+  - Save this file, press the 🔄 button on the RoGen card at chrome://extensions,
+    then refresh Roblox. Done. (Keep the [headings] exactly as they are.)
+
+Everyone who has this copy of RoGen sees these badges right away.
+
+
+[High Status]
+10980633414   owner
+6085938982
+2591037166
+
+[High Donator]
+10980633414   owner
+
+
+[Friends Of Owner]
+10980633414   owner
+888005466
+2445468619
+6085938982
+2712192855
+3833170363
+3023431106
+1348980700
+3952757789
+2591037166
+[Donator]
+10980633414   owner

@@ -1,0 +1,87 @@
+{
+  "manifest_version": 3,
+  "name": "RoGen",
+  "version": "4.8.0",
+  "description": "Unadd tracker, spending stats, server browser, game history, hidden group games, themes and RoGen badges for Roblox.",
+  "permissions": [
+    "storage",
+    "unlimitedStorage",
+    "alarms",
+    "notifications"
+  ],
+  "host_permissions": [
+    "https://*.roblox.com/*",
+    "https://raw.githubusercontent.com/*",
+    "https://gist.githubusercontent.com/*",
+    "https://*.github.io/*",
+    "https://api.github.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "RoGen",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.roblox.com/rogen*",
+        "https://www.roblox.com/Rogen*",
+        "https://www.roblox.com/RoGen*",
+        "https://www.roblox.com/charts/rogen*"
+      ],
+      "js": [
+        "src/early.js"
+      ],
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://www.roblox.com/*"
+      ],
+      "js": [
+        "src/lib.js",
+        "src/data.js",
+        "src/me.js",
+        "src/look.js",
+        "src/badge-icons.js",
+        "src/badges-list.js",
+        "src/badges.js",
+        "src/profile.js",
+        "src/game.js",
+        "src/group.js",
+        "src/catalog.js",
+        "src/limiteds.js",
+        "src/stats.js",
+        "src/widgets.js",
+        "src/avatar.js",
+        "src/page.js",
+        "src/playtime.js",
+        "src/places.js",
+        "src/search.js",
+        "src/notifs.js",
+        "src/native.js",
+        "src/finder.js",
+        "src/qol.js",
+        "src/main.js"
+      ],
+      "css": [
+        "src/rogen.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}
