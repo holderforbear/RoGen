@@ -57,4 +57,8 @@ Install any "CRX viewer" extension, open RoGen's Chrome Web Store page and view 
 | `Badges.txt` | Who has which RoGen badge (Roblox user IDs) |
 | `icons/` | Icons and badge images |
 
+## License
+
+All rights reserved. The code is public so you can check it's safe, not for copying or republishing. See [LICENSE](LICENSE).
+
 Made by bear. Not affiliated with Roblox Corporation.
