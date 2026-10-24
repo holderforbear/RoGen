@@ -48,7 +48,7 @@
     </div>`;
   }
 
-  R.route(() => true, () => {
+  R.route(() => R.feat("notifs") && true, () => {
     let group = null, lastKey = "", seenTimer = null;
 
     const render = async (base) => {

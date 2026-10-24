@@ -36,7 +36,7 @@
     down: g.totalDownVotes ?? 0
   });
 
-  R.route((p) => /^\/games\/\d+/i.test(p), () => {
+  R.route((p) => R.feat("gameTab") && /^\/games\/\d+/i.test(p), () => {
     const placeId = Number(location.pathname.match(/\/games\/(\d+)/)[1]);
     let uid = null, game = null, live = [], liveTimer = null;
 

@@ -102,7 +102,7 @@
   // Your mutual friends with the top player, shown under their status
   const mutualInto = (p) => {
     const me = R.me();
-    if (!me || me.id === p.id || !R.mutualFriends) return;
+    if (!me || me.id === p.id || !R.mutualFriends || !R.feat("searchMutuals")) return;
     R.mutualFriends(p.id).then(async (ids) => {
       if (!ids.length || !panel) return;
       const th = await R.thumbs("user", ids.slice(0, 3), "48x48");
@@ -237,7 +237,7 @@
   };
 
   document.addEventListener("input", (e) => {
-    if (!isSearchInput(e.target)) return;
+    if (!R.feat("searchDropdown") || !isSearchInput(e.target)) return;
     input = e.target;
     const q = input.value.trim();
     clearTimeout(timer);

@@ -443,5 +443,36 @@
 
   /* ---------- feature registry ---------- */
   R.routes = [];
-  R.route = (test, fn) => R.routes.push({ test, fn });
+  // key = the switch in Settings → Features that turns this on or off
+  R.route = (test, fn, key) => R.routes.push({ test, fn, key });
+
+  /* ---------- features you can turn off (Settings → Features) ---------- */
+  R.FEATURES = [
+    ["Profiles", "profileTab", "RoGen tab on profiles", "Overview, value, history and playtime for any player", true],
+    ["Profiles", "profileStatus", "Your status bubble", "The Discord-style bubble on your profile picture", true],
+    ["Profiles", "rogenBadges", "RoGen badges", "RoGen badges next to names and on profiles", true],
+    ["Profiles", "pfp", "Custom profile picture", "Shows your own picture instead of your headshot (only in your browser)", true],
+    ["Profiles", "navDot", "Status dot in the top bar", "A small dot on your avatar at the top of every page", true],
+    ["Roblox pages", "infoButton", "Info button", "IDs, copy buttons, Vault and Track in the corner of game, profile, community, item and badge pages", true],
+    ["Roblox pages", "gameTab", "RoGen tab on games", "Servers, stats, badges and alerts on game pages", true],
+    ["Roblox pages", "groupTab", "RoGen tab on communities", "Visits, players and hidden games on community pages", true],
+    ["Roblox pages", "catalogTab", "RoGen on catalog items", "Price history and outlook on item pages", true],
+    ["Roblox pages", "catalogLimiteds", "Marketplace extras", "Copy-item filter and deals on the Marketplace", true],
+    ["Roblox pages", "chartsDiscover", "Discover on Charts", "RoGen Discover button on Roblox Charts", true],
+    ["Roblox pages", "transactions", "Spending on Transactions", "Your spending summary at the bottom of the Transactions page", true],
+    ["Roblox pages", "friendsPage", "Extras on the Friends page", "Who unadded you and a friend count graph", true],
+    ["Roblox pages", "avatarEditor", "RoGen avatar editor", "RoGen's editor on the Avatar page", true],
+    ["Roblox pages", "notifs", "RoGen alerts in notifications", "RoGen's alerts in Roblox's notification panel", true],
+    ["Getting around", "quickFind", "Quick find (Ctrl K)", "One search box for games, players and pages", true],
+    ["Getting around", "searchDropdown", "Better search dropdown", "Games, players and friends under Roblox's search box", true],
+    ["Getting around", "searchMutuals", "Mutual friends in search", "How many mutual friends you have with a player in the search dropdown", false],
+    ["Getting around", "shortcuts", "Keyboard shortcuts", "Alt + letter shortcuts to jump around Roblox", true],
+    ["Getting around", "backToTop", "Back to top button", "A button to jump back up on long pages", false]
+  ];
+  R.FEATURE_DEFAULTS = Object.fromEntries(R.FEATURES.map((f) => [f[1], f[4]]));
+  let featCache = {};
+  R.feat = (key) => !key || (key in featCache ? featCache[key] !== false : R.FEATURE_DEFAULTS[key] !== false);
+  R.featReady = new Promise((res) => chrome.storage.local.get("rgFeatures", (v) => { featCache = (v && v.rgFeatures) || {}; res(); }));
+  chrome.storage.onChanged.addListener((ch) => { if (ch.rgFeatures) { featCache = ch.rgFeatures.newValue || {}; R.onFeatures && R.onFeatures(); } });
+  R.setFeat = async (key, on) => { const all = await R.get1("rgFeatures", {}); all[key] = !!on; await R.set({ rgFeatures: all }); };
 })();

@@ -681,7 +681,7 @@
   };
 
   /* Replace Roblox's avatar page with this editor */
-  R.route((p) => /^\/my\/avatar/i.test(p), () => {
+  R.route((p) => R.feat("avatarEditor") && /^\/my\/avatar/i.test(p), () => {
     const page = R.h(`<div class="rg-av-page rg-page-lite">
       <div class="rg-av-bar"><h1>Avatar</h1><span class="rg-mute rg-av-hint">Changes save to your Roblox account right away.</span><span style="flex:1"></span>
         <button class="btn-control-sm rg-av-classic">Use Roblox's editor</button></div>

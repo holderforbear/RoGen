@@ -185,7 +185,7 @@
   R.keepAtBottom = keepAtBottom;
 
   // /transactions → Spending at the bottom
-  R.route((p) => p === "/transactions", () => {
+  R.route((p) => R.feat("transactions") && p === "/transactions", () => {
     if (!R.me()) return {};
     const sec = R.section({
       id: "rg-spending",
@@ -201,7 +201,7 @@
   });
 
   // Friends page → who unadded you + friend count graph at the bottom
-  R.route((p) => /^\/users\/(friends|\d+\/friends)/.test(p), () => {
+  R.route((p) => R.feat("friendsPage") && /^\/users\/(friends|\d+\/friends)/.test(p), () => {
     const me = R.me();
     if (!me) return {};
     const sec = R.section({

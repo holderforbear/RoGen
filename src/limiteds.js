@@ -166,7 +166,7 @@
   const priceText = (i) => i.lowestPrice != null ? R.robux(i.lowestPrice) : i.price != null && !/off\s*sale/i.test(i.priceStatus || "") ? (i.price ? R.robux(i.price) : "Free") : `<span class="rg-mute">Offsale</span>`;
   const itemUrl = (i) => `https://www.roblox.com/${i.itemType === "Bundle" ? "bundles" : "catalog"}/${i.id}`;
 
-  R.route((p) => p === "/catalog", () => {
+  R.route((p) => R.feat("catalogLimiteds") && p === "/catalog", () => {
     let q = null, strip = null, real = [], iconic = false, realIds = new Set(), busy = false;
     const details = new Map();     // "Asset:123" -> item details
     let hide = true;

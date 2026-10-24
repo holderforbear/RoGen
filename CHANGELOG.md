@@ -1,3 +1,42 @@
+# RoGen 4.9.3
+
+- **Panel color only colors the UI now.** Cards, Roblox's panels, the top bar, Roblox's left menu, RoGen's sidebar and menus get the color. Your background shows between them, with no big tinted sheet over the whole page.
+- RoGen finds Roblox's top bar and left menu by where they sit on the page, so it keeps working when Roblox renames things.
+
+# RoGen 4.9.2
+
+- **Panel color.** Settings → Theme → Panel color tints RoGen's cards and Roblox's panels, top bar and menus to go with your background. Pick a color, use your own, or press **Match background** and RoGen takes the color from your background picture or gradient. There's a strength slider and a button to use the same color as your accent.
+- **Fixed:** a custom profile picture showed as a big stretched oval on the dashboard and in RoGen ID. It's a circle again at any picture size.
+- Fixed the stray dot after "on Roblox" on the dashboard (the ID chip now sits on its own line).
+- Features moved under Theme in Settings.
+
+# RoGen 4.9.1
+
+## Turn off anything you don't use
+- **Settings → Features.** A switch for every part of RoGen: the RoGen tabs on profiles, games, communities and items, your status bubble, RoGen badges, your custom picture, the Info button, the search dropdown, Ctrl K, shortcuts and more. You can also hide any page from the RoGen sidebar. Changes apply straight away.
+- **Simple mode** keeps the main things and turns off the extras in one click. **Turn everything on** brings it all back.
+- Off by default now: mutual friends in the search dropdown and the back-to-top button.
+- **Removed "Friends for…"** from profiles and the profile Overview.
+- **Status bubble works on every profile layout,** including pictures inside a colored circle. If the picture loads late, the bubble moves onto it. Your custom picture now fills the round frame.
+
+# RoGen 4.9
+
+## New in 4.9: Wallet, Inventory, Badges, Vault, Tracker, Compare, RoGen ID, Wrapped, Insights
+The RoGen page has a new sidebar grouped into Explore, You and Track.
+- **RoGen ID.** Type a username, link or ID to see a full profile: account age, friends and followers, badges and their rarest ones, limiteds RAP, outfit cost and an estimated value, past usernames and display names, communities they own, their games and total visits, mutual friends, and your private note about them.
+- **Wallet** (was Spending). Earned, spent, net and pending Robux for today, the past week, month or year, where it came from, and your biggest purchases. Purchases by game and by month are still here.
+- **Inventory.** Your limiteds with search, sort (value, rarity, serial), RAP range and a duplicates filter, a value-over-time chart, and **profit & loss** against what you paid. Plus an **All items** tab to search everything you own by type and price.
+- **Badges.** Recently earned, rarest badges, progress per game (6 of 12, 50%), games where your rarest badges come from, and a **showcase** of up to 8 pinned badges that also shows on your dashboard.
+- **Vault** (was Library). Saved profiles, games, developers (with their newest update) and a **wishlist** with live prices, above your bookmark folders, Roblox favorites, notes and recently viewed.
+- **Tracker** with a **Timeline.** Track profiles (name, display name, bio, followers), communities (owner, name, shout, members), games (updates, renames, visit milestones, player records, events) and limiteds (RAP moves). RoGen checks every 30 minutes, notifies you and keeps a timeline. It also logs your new badges, inventory value and friends' name changes.
+- **Compare** players, badge collections, inventories, outfits or games side by side, with mutual friends.
+- **Wrapped.** Your year: badges, playtime, Robux spent, new friends, followers and value change.
+- **Insights.** Charts of followers, friends, value, spending per month and most played, plus recently released games and genres on Roblox's charts.
+- **Friends.** New tabs for Recently added, a Leaderboard (playtime, account age, followers, friends) and Name changes. Star friends to keep them on top, and add private notes.
+- **Info button** on game, profile, community, item, bundle and badge pages: every ID with a copy button, creator, dates, and one-click Vault, Wishlist and Track.
+- **Search** remembers recent searches, and a number can be opened as a player, game, community, item, bundle or badge.
+- **Settings:** darker dark mode for OLED, hide parts of Roblox (chat, footer, sponsored rows, Premium ads, friends row, Robux button), a profile banner only you see, and which tracker alerts you want. The dashboard can be customized (show, hide and reorder cards), and there's a trade calculator in Tools.
+
 # RoGen 4.8
 
 ## New in 4.8: click to wear, click again to take off

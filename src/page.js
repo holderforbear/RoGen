@@ -8,17 +8,24 @@
     ["discover", "Discover"],
     ["search", "Search"],
     ["lookup", "Lookup"],
+    ["id", "RoGen ID"],
+    ["insights", "Insights"],
     ["#", "You"],
-    ["spending", "Spending"],
+    ["spending", "Wallet"],
     ["playtime", "Playtime"],
     ["friends", "Friends & Unadds"],
-    ["library", "Library"],
+    ["inventory", "Inventory"],
+    ["collection", "Badges"],
+    ["library", "Vault"],
+    ["wrapped", "Wrapped"],
     ["#", "Track"],
+    ["tracker", "Tracker"],
+    ["compare", "Compare"],
     ["items", "Items & Deals"],
     ["alerts", "Alerts"],
     ["tools", "Tools"],
     ["#owner", "Owner"],
-    ["badges", "Badges"],
+    ["badges", "Badge manager"],
     ["-"],
     ["settings", "Settings"]
   ];
@@ -123,7 +130,7 @@
       main.querySelector(".d-kpis").innerHTML = kpis.map(([v, l, d]) => `<div class="rg-kpi"><div class="rg-kpi-v">${v}</div><div class="rg-kpi-l">${l} ${d}</div></div>`).join("");
       const yrs = s.ageDays / 365;
       if (s.user && s.user.hasVerifiedBadge && !verified) { verified = true; R.badges.ready().then(drawBadges); }
-      main.querySelector(".h-meta").innerHTML = `Joined ${R.date(s.user.created)} · ${yrs >= 1 ? yrs.toFixed(1).replace(/\.0$/, "") + " years" : s.ageDays + " days"} on Roblox · ${R.copy(me.id, "ID")}`;
+      main.querySelector(".h-meta").innerHTML = `Joined ${R.date(s.user.created)} · ${yrs >= 1 ? yrs.toFixed(1).replace(/\.0$/, "") + " years" : s.ageDays + " days"} on Roblox<div style="margin-top:6px">${R.copy(me.id, "ID")}</div>`;
       if (cur) {
         main.querySelector(".h-robux").innerHTML = R.robux(cur.robux);
         main.querySelector(".h-usd").textContent = `≈ $${(cur.robux * (await rates()).devex).toFixed(2)} DevEx value`;
@@ -161,17 +168,20 @@
     if (!me) { main.innerHTML = `<div class="rg-empty" style="padding:80px 0">Log in to Roblox first.</div>`; return; }
     const tab = params?.get("tab") || "all";
     main.innerHTML = `<div class="rg-pagehead"><h1>Friends</h1><p class="rg-lead">See who's online, unfriend in one click, and track who unadds you.</p></div>
-      <div class="rg-seg">${[["all", "All friends"], ["unadds", "Unadded you"], ["growth", "Graphs"]].map(([k, l]) => `<button class="${k === tab ? "on" : ""}" data-t="${k}">${l}</button>`).join("")}</div>
+      <div class="rg-seg">${[["all", "All friends"], ["unadds", "Unadded you"], ["recent", "Recently added"], ["leader", "Leaderboard"], ["names", "Name changes"], ["growth", "Graphs"]].map(([k, l]) => `<button class="${k === tab ? "on" : ""}" data-t="${k}">${l}</button>`).join("")}</div>
       <div class="f-body"></div>`;
     main.querySelectorAll(".rg-seg button").forEach((b) => (b.onclick = () => { history.replaceState(null, "", `#friends?tab=${b.dataset.t}`); friends(main, q, new URLSearchParams(`tab=${b.dataset.t}`)); }));
     const body = main.querySelector(".f-body");
     if (tab === "unadds") return unaddsTab(body, me);
     if (tab === "growth") return growthTab(body, me);
+    if (R.friendsExtra && ["recent", "leader", "names"].includes(tab)) return R.friendsExtra(body, me, tab);
 
     body.innerHTML = `<div class="rg-loading">Loading your friends…</div>`;
     const ids = await R.friendIds(me.id);
     const [users, pres] = await Promise.all([R.users(ids), R.presence(ids)]);
     let list = ids.map((id) => ({ id, name: users[id]?.name || String(id), displayName: users[id]?.displayName || users[id]?.name || String(id), p: pres[id] }));
+    const favs = new Set(await R.get1("friendFavs", []));
+    let fnotes = await R.notes.all();
     const selected = new Set();
     body.innerHTML = `<div class="rg-toolbar rg-friendbar">
         <input class="rg-input f-q" placeholder="Search ${list.length} friends…" style="flex:1;min-width:200px">
@@ -186,11 +196,13 @@
       const qq = $(".f-q").value.trim().toLowerCase(), show = $(".f-show").value, sort = $(".f-sort").value;
       let l = list.filter((f) => (!qq || f.name.toLowerCase().includes(qq) || f.displayName.toLowerCase().includes(qq)) && (!show || presenceKind(f.p) === show || (show === "online" && presenceKind(f.p) !== "off")));
       l.sort(sort === "az" ? (a, b) => a.displayName.localeCompare(b.displayName) : sort === "za" ? (a, b) => b.displayName.localeCompare(a.displayName) : (a, b) => rank(b) - rank(a) || a.displayName.localeCompare(b.displayName));
+      l.sort((a, b) => (favs.has(b.id) ? 1 : 0) - (favs.has(a.id) ? 1 : 0));          // favorite friends always on top
       $(".rg-flist").innerHTML = l.length ? l.map((f) => `<div class="rg-frow ${selected.has(f.id) ? "sel" : ""}" data-id="${f.id}">
           <label class="rg-fcheck"><input type="checkbox" ${selected.has(f.id) ? "checked" : ""}></label>
           <a class="rg-av" href="https://www.roblox.com/users/${f.id}/profile"><img data-thumb="user:${f.id}" alt=""><i class="rg-pres ${presenceKind(f.p)}"></i></a>
-          <a class="rg-fname" href="https://www.roblox.com/users/${f.id}/profile"><b>${R.esc(f.displayName)}</b><small>@${R.esc(f.name)}</small></a>
+          <a class="rg-fname" href="https://www.roblox.com/users/${f.id}/profile"><b>${R.esc(f.displayName)}</b><small>@${R.esc(f.name)}${fnotes["user:" + f.id] ? ` · <span class="f-notetxt">${R.esc(fnotes["user:" + f.id].text.slice(0, 60))}</span>` : ""}</small></a>
           <span class="rg-fpres ${presenceKind(f.p)}">${R.esc(presenceText(f.p))}</span>
+          <span class="f-acts"><button class="f-star ${favs.has(f.id) ? "on" : ""}" title="${favs.has(f.id) ? "Remove from favorites" : "Favorite"}" aria-pressed="${favs.has(f.id)}"><svg viewBox="0 0 24 24" width="17" height="17" fill="${favs.has(f.id) ? "currentColor" : "none"}" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.8-5.2 2.8 1-5.8-4.3-4.1 5.9-.9z"/></svg></button><button class="f-note" title="Note"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h10l4 4v12H5z"/><path d="M8 12h8M8 16h5"/></svg></button></span>
           <button class="btn-control-sm f-un">Unfriend</button></div>`).join("") : `<div class="rg-empty">No friends match.</div>`;
       R.fillThumbs($(".rg-flist"));
       $(".rg-selbar").hidden = !selected.size;
@@ -214,6 +226,13 @@
       const row = e.target.closest(".rg-frow"); if (!row) return;
       const id = Number(row.dataset.id);
       if (e.target.closest(".f-un")) return unfriendMany([id]);
+      if (e.target.closest(".f-star")) { favs.has(id) ? favs.delete(id) : favs.add(id); R.set({ friendFavs: [...favs] }); return draw(); }
+      if (e.target.closest(".f-note")) {
+        const f = list.find((x) => x.id === id), cur = fnotes["user:" + id];
+        R.ask(e.target.closest(".f-note"), { title: `Note about ${f ? f.displayName : "this friend"}`, hint: "Only you can see it.", value: cur ? cur.text : "", ok: "Save", reset: cur ? "Delete note" : "" })
+          .then(async (v) => { if (v === null) return; await R.notes.set("user", id, v, f ? f.displayName : String(id)); fnotes = await R.notes.all(); draw(); });
+        return;
+      }
       if (e.target.closest(".rg-fcheck")) { const c = row.querySelector("input"); setTimeout(() => { c.checked ? selected.add(id) : selected.delete(id); row.classList.toggle("sel", c.checked); $(".rg-selbar").hidden = !selected.size; $(".s-count").textContent = `${selected.size} selected`; }); }
     });
     $(".s-none").onclick = () => { selected.clear(); draw(); };
@@ -458,11 +477,13 @@
 
   async function spending(main) {
     const me = R.me();
-    if (!me) { main.innerHTML = `<h1>Spending</h1><div class="rg-empty">Log in first.</div>`; return; }
-    main.innerHTML = `<h1>Spending</h1><p class="rg-lead">Every Robux purchase you've made, totaled by game and by month.</p>
+    if (!me) { main.innerHTML = `<h1>Wallet</h1><div class="rg-empty">Log in first.</div>`; return; }
+    main.innerHTML = `<h1>Wallet</h1><p class="rg-lead">Robux in and out: what you've earned, what's pending, and every purchase totaled by game and by month.</p>
+      <div class="sp-wallet"></div>
       <div class="rg-row" style="margin-bottom:14px"><button class="btn-primary-md sp-sync">Sync purchases</button><button class="btn-control-md sp-stop" hidden>Stop</button>
         <span class="rg-mute sp-state"></span><span style="flex:1"></span><button class="btn-control-md sp-csv">Export CSV</button></div>
       <div class="sp-out"></div>`;
+    if (R.walletTop) R.walletTop(main.querySelector(".sp-wallet"), me);
     const stopRef = { stop: false };
     const draw = async () => {
       const tx = await R.get1("tx", []);
@@ -778,6 +799,7 @@
 
   /* =================== SETTINGS =================== */
   const PRESETS = ["linear-gradient(135deg,#1a1033,#3b1d6e,#0b5ea8)", "linear-gradient(135deg,#0f2027,#203a43,#2c5364)", "linear-gradient(135deg,#ff512f,#dd2476)", "linear-gradient(135deg,#11998e,#38ef7d)", "linear-gradient(135deg,#f7971e,#ffd200)", "linear-gradient(135deg,#000428,#004e92)", "linear-gradient(135deg,#232526,#414345)", "linear-gradient(135deg,#8e2de2,#4a00e0)", "linear-gradient(135deg,#ee9ca7,#ffdde1)", "radial-gradient(circle at 30% 20%,#2b5876,#4e4376 60%,#0b0b12)", "linear-gradient(180deg,#0b0b12,#1c1c28)", "#0e0e14"];
+  const TINTS = ["#8b1e2b", "#7a2e8f", "#2b3f9e", "#11707a", "#1f7a3c", "#a3561a", "#a0257a", "#555a66"];
   const ACCENTS = ["#335fff", "#7c5cff", "#00b06f", "#e5484d", "#f5a623", "#00c2ff", "#ff5fa2", "#8a8a8a"];
   R.PRESETS = PRESETS;
 
@@ -806,11 +828,16 @@
   });
 
   async function settings(main) {
-    const s = await R.get(["bgMode", "bgPreset", "bgImage", "bgUpload", "bgDim", "accent", "hideRobux", "blurCards", "status", "pfp"]);
+    const s = await R.get(["bgMode", "bgPreset", "bgImage", "bgUpload", "bgDim", "accent", "hideRobux", "blurCards", "status", "pfp", "tint", "tintStr"]);
     main.innerHTML = `<h1>Settings</h1><p class="rg-lead">Make Roblox look and work the way you want.</p>
       <div class="rg-section section"><div class="container-header rg-head"><h2>Theme</h2></div><div class="section-content rg-body">
         <div class="rg-h3">Accent color</div>
         <div class="rg-row">${ACCENTS.map((c) => `<button class="rg-swatch t-acc ${s.accent === c || (!s.accent && c === "#335fff") ? "on" : ""}" data-c="${c}" style="background:${c}" title="${c}"></button>`).join("")}<input type="color" class="t-custom" value="${s.accent || "#335fff"}" title="Custom color"></div>
+        <div class="rg-h3">Panel color</div>
+        <p class="rg-note" style="margin:0 0 8px">Tints RoGen's cards and Roblox's panels, the top bar and menus so they go with your background.</p>
+        <div class="rg-row"><button class="rg-chip t-tint ${!s.tint ? "on" : ""}" data-t="">Off</button><button class="rg-chip t-tint ${s.tint === "auto" ? "on" : ""}" data-t="auto">Match background</button>
+          ${TINTS.map((c) => `<button class="rg-swatch t-tint ${s.tint === c ? "on" : ""}" data-t="${c}" style="background:${c}" title="${c}"></button>`).join("")}<input type="color" class="t-tintc" value="${/^#/.test(s.tint || "") ? s.tint : "#8b1e2b"}" title="Custom color"></div>
+        <div class="rg-row t-tintrow" style="margin-top:10px" ${s.tint ? "" : "hidden"}><span>Strength</span><input type="range" min="5" max="70" step="5" class="t-tints" value="${s.tintStr ?? 30}" style="accent-color:var(--rg-accent)"><button class="rg-link t-tinta">Use it as the accent color too</button></div>
         <div class="rg-h3">Background</div>
         <div class="rg-row" style="margin-bottom:10px">${["off", "preset", "upload", "image"].map((m) => `<button class="rg-chip t-mode ${(s.bgMode || "off") === m ? "on" : ""}" data-m="${m}">${{ off: "Default", preset: "Gradient", upload: "Upload a file", image: "Image link" }[m]}</button>`).join("")}</div>
         <div class="t-preset rg-row" ${s.bgMode === "preset" ? "" : "hidden"}>${PRESETS.map((p) => `<button class="rg-bgpick t-p ${s.bgPreset === p ? "on" : ""}" data-p="${R.esc(p)}" style="background:${p}"></button>`).join("")}</div>
@@ -848,6 +875,16 @@
     const $ = (q) => main.querySelector(q);
     main.querySelectorAll(".t-acc").forEach((b) => (b.onclick = () => { R.set({ accent: b.dataset.c }); settings(main); }));
     $(".t-custom").onchange = (e) => { R.set({ accent: e.target.value }); settings(main); };
+    main.querySelectorAll(".t-tint").forEach((b) => (b.onclick = async () => { await R.set({ tint: b.dataset.t }); settings(main); }));
+    $(".t-tintc").onchange = async (e) => { await R.set({ tint: e.target.value }); settings(main); };
+    $(".t-tints").oninput = (e) => R.set({ tintStr: Number(e.target.value) });
+    $(".t-tinta").onclick = async () => {
+      let c = s.tint === "auto" ? R.lookTint() : s.tint;
+      const m = String(c || "").match(/rgb\((\d+),(\d+),(\d+)\)/);
+      if (m) c = "#" + m.slice(1).map((n) => Number(n).toString(16).padStart(2, "0")).join("");
+      if (!/^#[0-9a-f]{3,6}$/i.test(c || "")) return R.toast("Pick a color first");
+      await R.set({ accent: c }); R.toast("Accent color updated"); settings(main);
+    };
     main.querySelectorAll(".t-mode").forEach((b) => (b.onclick = async () => {
       const patch = { bgMode: b.dataset.m };
       if (b.dataset.m === "preset" && !s.bgPreset) patch.bgPreset = PRESETS[0];
@@ -914,6 +951,7 @@
   }
 
   /* =================== mount =================== */
+  R.libraryOld = library;
   const RENDER = { dashboard, discover, search, spending, playtime, friends, library, items, alerts, tools, settings, ...(R.extraViews || {}) };
   R.views = RENDER;   // other Roblox pages reuse these (see places.js)
 const ICONS = {
@@ -929,6 +967,13 @@ const ICONS = {
     items: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h14l-1.2 12H6.2z"/><path d="M9 8V6a3 3 0 016 0v2"/></svg>`,
     alerts: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 0112 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 004 0"/></svg>`,
     tools: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 6.5a4 4 0 00-5.4 5.1L4 16.7 7.3 20l5.1-5.1a4 4 0 005.1-5.4l-2.4 2.4-2.6-.7-.7-2.6z"/></svg>`,
+    id: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2.2"/><path d="M5.8 16c.6-1.6 1.8-2.4 3.2-2.4s2.6.8 3.2 2.4M14.5 10h4M14.5 13.5h3"/></svg>`,
+    insights: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18"/><path d="M5 16l4-5 4 3 6-8"/></svg>`,
+    inventory: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7.5l9-4.5 9 4.5v9l-9 4.5-9-4.5z"/><path d="M3 7.5l9 4.5 9-4.5M12 12v9"/></svg>`,
+    collection: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="5.5"/><path d="M8.5 13.5L7 21l5-2.5 5 2.5-1.5-7.5"/></svg>`,
+    wrapped: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M3 12h18M12 8v13M12 8c-1.5-3-5-3.5-5-1.2C7 8 9.5 8 12 8zm0 0c1.5-3 5-3.5 5-1.2C17 8 14.5 8 12 8z"/></svg>`,
+    tracker: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/></svg>`,
+    compare: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4v16M16 4v16"/><path d="M3 9l5-5 5 5M11 15l5 5 5-5"/></svg>`,
     settings: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.6 1.6 0 00-1.8-.3 1.6 1.6 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.6 1.6 0 00-1-1.5 1.6 1.6 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.6 1.6 0 00.3-1.8 1.6 1.6 0 00-1.5-1H3a2 2 0 110-4h.1a1.6 1.6 0 001.5-1 1.6 1.6 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.6 1.6 0 001.8.3H9a1.6 1.6 0 001-1.5V3a2 2 0 114 0v.1a1.6 1.6 0 001 1.5 1.6 1.6 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.6 1.6 0 00-.3 1.8V9a1.6 1.6 0 001.5 1H21a2 2 0 110 4h-.1a1.6 1.6 0 00-1.5 1z"/></svg>`
   };
   R.viewIcons = ICONS;
@@ -948,12 +993,18 @@ const ICONS = {
   };
 
   // roblox.com/rogen  (Roblox shows an empty Charts page there, RoGen replaces it)
+  // the sidebar, without pages you turned off in Settings → Features (and without empty group labels)
+  const sideViews = () => {
+    const l = VIEWS.filter(([id]) => ((id !== "badges" && id !== "#owner") || R.badges.isOwner()) && (id[0] === "#" || id === "-" || R.feat("view:" + id)));
+    return l.filter(([id], i) => id[0] !== "#" || (l[i + 1] && l[i + 1][0][0] !== "#" && l[i + 1][0] !== "-"));
+  };
+  R.VIEWS = VIEWS;
   R.route((p) => p === "/rogen", () => {
     const page = R.h(`<div class="rg-page">
       <nav class="rg-side" aria-label="RoGen">
         <a class="rg-brand" href="#dashboard"><span class="rg-brand-mark"><span class="rg-logo"></span></span><span class="rg-brand-t">RoGen<small>v${R.esc(chrome.runtime.getManifest().version)}</small></span></a>
-        <button class="rg-side-find" type="button"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.3-4.3"/></svg><span>Quick find</span><kbd>${/Mac|iPhone|iPad/.test(navigator.platform) ? "⌘K" : "Ctrl K"}</kbd></button>
-        ${VIEWS.filter(([id]) => (id !== "badges" && id !== "#owner") || R.badges.isOwner()).map(([id, label]) => (id === "-" ? `<div class="rg-side-sep"></div>` : id[0] === "#" ? `<div class="rg-side-label">${label}</div>` : `<a class="rg-side-link" href="#${id}" data-v="${id}"><span class="rg-side-ic">${ICONS[id]}</span><span class="rg-side-t">${label}</span></a>`)).join("")}
+        <button class="rg-side-find" type="button" ${R.feat("quickFind") ? "" : "hidden"}><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.3-4.3"/></svg><span>Quick find</span><kbd>${/Mac|iPhone|iPad/.test(navigator.platform) ? "⌘K" : "Ctrl K"}</kbd></button>
+        ${sideViews().map(([id, label]) => (id === "-" ? `<div class="rg-side-sep"></div>` : id[0] === "#" ? `<div class="rg-side-label">${label}</div>` : `<a class="rg-side-link" href="#${id}" data-v="${id}"><span class="rg-side-ic">${ICONS[id]}</span><span class="rg-side-t">${label}</span></a>`)).join("")}
       </nav><div class="rg-main"></div></div>`);
     page.querySelector(".rg-side-find").onclick = () => R.finder && R.finder.open();
     let current = null;
@@ -965,7 +1016,7 @@ const ICONS = {
       const main = R.h(`<div class="rg-main"></div>`);
       page.querySelector(".rg-main").replaceWith(main);
       const params = new URLSearchParams(location.hash.split("?")[1] || "");
-      Promise.resolve(RENDER[v](main, params.get("q"), params)).catch((e) => (main.innerHTML = R.errBox(e)));
+      Promise.resolve(RENDER[v](main, params.get("q"), params)).then(() => R.afterView && R.afterView(v, main)).catch((e) => (main.innerHTML = R.errBox(e)));
       document.title = `RoGen · ${(VIEWS.find(([id]) => id === v) || [, "Dashboard"])[1]} - Roblox`;
       main.dataset.view = v;
       window.scrollTo(0, 0);

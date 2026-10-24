@@ -18,7 +18,7 @@
     };
   };
 
-  R.route((p) => /^\/catalog\/\d+/i.test(p), () => {
+  R.route((p) => R.feat("catalogTab") && /^\/catalog\/\d+/i.test(p), () => {
     const id = Number(location.pathname.match(/\/catalog\/(\d+)/)[1]);
     let infoP = null;
     const info = () => (infoP = infoP || R.itemInfo(id).then((i) => { R.recent.add({ kind: "item", id, name: i.name, url: `https://www.roblox.com/catalog/${id}` }); return i; }));

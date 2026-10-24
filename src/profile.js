@@ -135,10 +135,8 @@
       await R.snap(`userText:${uid}`, { displayName: s.user.displayName, name: s.user.name, description: s.user.description || "" }, { textOnly: true });
       R.recent.add({ kind: "user", id: uid, name: s.user.displayName, url: location.href.split("#")[0] });
       const h = await R.hist(`user:${uid}`);
-      const fi = await R.friendshipInfo(uid).catch(() => null);
       pane.innerHTML = `
         <div class="rg-stats">
-          ${fi ? R.stat("Friends for", fi.value, fi.tip) : ""}
           ${R.stat("Account age", age(s.ageDays), "Joined " + R.date(s.user.created))}
           ${R.stat("Friends", R.fmt(s.friends))}
           ${R.stat("Followers", R.fmt(s.followers))}
@@ -237,15 +235,22 @@
 
     // Status: a Discord-style bubble on the top corner of your profile picture (falls back to a pill under @username)
     let placing = false;
+    // Roblox has more than one profile layout (and some pictures sit in a colored circle), so look for the
+    // biggest round or square picture in the header: an <img>, a <canvas>, or a box with a background image
     const findAvatar = () => {
-      const hdr = document.querySelector(".user-profile-header, .profile-header, #profile-header, [class*='profile-header']");
+      const hdr = document.querySelector(".user-profile-header, .profile-header, #profile-header, [class*='profile-header'], [class*='ProfileHeader'], [data-testid*='profile-header']")
+        || (document.querySelector(".stylistic-alts-username, .profile-display-name, #profile-header-title-container-name") || {}).closest?.("section, header, [class*='header']");
       if (!hdr) return null;
+      const known = hdr.querySelector(".user-profile-header-details-avatar-container, .profile-avatar-thumb, [class*='avatar-container'], [class*='AvatarContainer'], [data-testid*='avatar']");
       let best = null, bw = 0;
-      hdr.querySelectorAll("img, canvas").forEach((el) => {
-        if (el.closest(".rg-bubble, .rg-namebadges, .rg-bdline")) return;
+      const consider = (el) => {
+        if (el.closest(".rg-bubble, .rg-namebadges, .rg-bdline, .rg-mav, .rg-status")) return;
         const r = el.getBoundingClientRect();
-        if (r.width >= 64 && Math.abs(r.width - r.height) < 6 && r.width > bw) { best = el; bw = r.width; }
-      });
+        if (r.width >= 64 && Math.abs(r.width - r.height) <= Math.max(6, r.width * 0.08) && r.width > bw) { best = el; bw = r.width; }
+      };
+      if (known) { consider(known); known.querySelectorAll("img, canvas, span, div").forEach(consider); }
+      if (!best) hdr.querySelectorAll("img, canvas").forEach(consider);
+      if (!best) hdr.querySelectorAll("span, div, a").forEach((el) => { const cs = getComputedStyle(el); if (cs.backgroundImage !== "none" || parseFloat(cs.borderTopLeftRadius) >= 30) consider(el); });
       return best;
     };
     const putBubble = () => {
@@ -260,7 +265,12 @@
     };
     const placeStatus = async () => {
       if (!isMe || placing) return;
-      if (statusNode && document.contains(statusNode)) { putBubble(); return; }
+      if (!R.feat("profileStatus")) { statusNode && statusNode.remove(); statusNode = null; return; }
+      if (statusNode && document.contains(statusNode)) {
+        // started as a pill because the picture wasn't drawn yet: move to the picture once it is
+        if (!statusNode.classList.contains("rg-bubble") && findAvatar()) { statusNode.remove(); statusNode = null; }
+        else { putBubble(); return; }
+      }
       placing = true;
       const st = await R.get1("status", null);
       placing = false;
@@ -287,34 +297,6 @@
     addEventListener("resize", putBubble);
     const onStatus = (ch) => { if (ch.status) { statusNode && statusNode.remove(); statusNode = null; placeStatus(); } };
     chrome.storage.onChanged.addListener(onStatus);
-
-    // "Friends for 3 months" under their @username (only for people who are your friends)
-    let friendNode = null, friendPlacing = false, friendInfo;
-    const placeFriend = async () => {
-      if (isMe || !me || friendPlacing || (friendNode && document.contains(friendNode))) return;
-      friendPlacing = true;
-      try { if (friendInfo === undefined) friendInfo = await R.friendshipInfo(uid).catch(() => null); } finally { friendPlacing = false; }
-      if (!friendInfo || (friendNode && document.contains(friendNode))) return;
-      const uname = document.querySelector(".user-profile-header .stylistic-alts-username");
-      const anchor = uname ? uname.parentElement : document.querySelector("#profile-header-title-container-name, .profile-header-names, .profile-display-name");
-      if (!anchor) return;
-      document.querySelectorAll(".rg-fpill").forEach((n) => n.remove());
-      friendNode = R.h(`<button type="button" class="rg-fpill" title="${R.esc(friendInfo.tip)}"><span>${R.esc(friendInfo.text)}</span></button>`);
-      anchor.insertAdjacentElement("afterend", friendNode);
-      // Roblox doesn't share the real date, so you can enter it
-      friendNode.onclick = async (e) => {
-        e.preventDefault();
-        const iso = (t) => { const d = new Date(t); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
-        const v = await R.ask(friendNode, { title: "When did you become friends?", hint: "Roblox doesn't share this date. If you know it, enter it and RoGen will show the full time. Reset goes back to automatic.", type: "date", value: friendInfo.t ? iso(friendInfo.t) : "", max: iso(Date.now()), ok: "Save", reset: friendInfo.manual ? "Reset" : "" });
-        if (v === null) return;
-        const all = await R.get1("friendSinceManual", {});
-        if (v) { const [y, m, d] = v.split("-").map(Number); all[uid] = new Date(y, m - 1, d, 12).getTime(); } else delete all[uid];
-        await R.set({ friendSinceManual: all });
-        friendNode.remove(); friendNode = null; friendInfo = undefined;
-        placeFriend();
-        R.toast(v ? "Saved" : "Back to automatic");
-      };
-    };
 
     // "7 Mutual Friends" pill in the stats row (next to Friends / Followers / Following), with the first mutuals' faces.
     // It is a copy of Roblox's own "Following" pill so it matches; if that pill can't be found it falls back to a pill under the username.
@@ -384,7 +366,7 @@
       const uname = document.querySelector(".user-profile-header .stylistic-alts-username");
       const anchor = uname ? uname.parentElement : document.querySelector("#profile-header-title-container-name, .profile-header-names, .profile-display-name");
       if (!anchor) return;
-      (friendNode && friendNode.isConnected ? friendNode : anchor).insertAdjacentElement("afterend", mutNode);
+      anchor.insertAdjacentElement("afterend", mutNode);
     };
 
     // If YOU press Unfriend, remember it so they aren't listed as "unadded you"
@@ -395,7 +377,7 @@
     document.addEventListener("click", onUnfriendClick, true);
 
     // RoGen badges, shown after Roblox's own badges
-    const bdm = R.badges.mountProfile(uid);
+    const bdm = R.feat("rogenBadges") ? R.badges.mountProfile(uid) : { tick() {}, stop() {} };
 
     // A "RoGen" tab next to About / Creations
     const pane = R.h(`<div class="profile-tab-content padding-top-xxlarge rg-pane"></div>`);
@@ -404,7 +386,7 @@
     const place = () => {
       bdm.tick();
       placeStatus();
-      placeFriend();
+      if (!R.feat("profileTab")) return;
       if (tab && document.contains(tab.li)) return;
       const ul = document.querySelector("ul.profile-tabs");
       if (ul) {
@@ -424,7 +406,7 @@
       }
     };
     place();
-    return { tick: place, stop: () => { bdm.stop(); pane.remove(); tab && tab.li.remove(); statusNode && statusNode.remove(); friendNode && friendNode.remove(); mutNode && mutNode.remove(); chrome.storage.onChanged.removeListener(onStatus); document.removeEventListener("click", onUnfriendClick, true); } };
+    return { tick: place, stop: () => { bdm.stop(); pane.remove(); tab && tab.li.remove(); statusNode && statusNode.remove(); mutNode && mutNode.remove(); chrome.storage.onChanged.removeListener(onStatus); document.removeEventListener("click", onUnfriendClick, true); } };
   });
 
   // Side-by-side comparison table for any number of users

@@ -19,7 +19,7 @@
     ticking = true;
     requestAnimationFrame(() => {
       ticking = false;
-      const show = scrollY > 1400;
+      const show = scrollY > 1400 && R.feat("backToTop");
       if (show) ensure();
       if (btn) btn.classList.toggle("show", show);
     });

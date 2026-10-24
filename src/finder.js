@@ -273,6 +273,7 @@
 
   const typing = (el) => el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
   document.addEventListener("keydown", (e) => {
+    if (!R.feat("quickFind")) return;
     if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === "k") {
       e.preventDefault(); e.stopPropagation();
       wrap ? close() : open();

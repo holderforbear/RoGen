@@ -413,6 +413,7 @@ function setupAlarms() {
   chrome.alarms.create("watch", { periodInMinutes: 5 });
   chrome.alarms.create("presence", { periodInMinutes: 0.5 });
   chrome.alarms.create("badgefeed", { periodInMinutes: 1 });
+  chrome.alarms.create("rgtrack", { periodInMinutes: 30, delayInMinutes: 1 });
   updateBadge();
   trackPlaytime().catch(() => {});
 }
@@ -423,7 +424,156 @@ chrome.alarms.onAlarm.addListener((a) => {
   if (a.name === "friends") checkFriends().catch((e) => console.warn(e));
   if (a.name === "watch") checkWatch().catch((e) => console.warn(e));
   if (a.name === "presence") trackPlaytime().catch((e) => console.warn(e));
+  if (a.name === "rgtrack") runTracker().catch((e) => console.warn("RoGen tracker", e));
 });
+chrome.alarms.get("rgtrack").then((a) => { if (!a) chrome.alarms.create("rgtrack", { periodInMinutes: 30, delayInMinutes: 1 }); });
 
 // If Chrome dropped the timer, put it back (so playtime keeps counting)
 chrome.alarms.get("presence").then((a) => { if (!a) setupAlarms(); });
+
+
+/* ---------------- RoGen Tracker: public changes to profiles, communities, games and items you track ----------------
+   Runs every 30 minutes while Chrome is open. Everything it notices goes on the Timeline (RoGen → Tracker),
+   and the important ones (owner changed, new badge, big value swings, name changes) also send a notification. */
+const MILESTONES = [1e3, 1e4, 5e4, 1e5, 2.5e5, 5e5, 1e6, 2.5e6, 5e6, 1e7, 2.5e7, 5e7, 1e8, 2.5e8, 5e8, 1e9, 2.5e9, 5e9];
+const crossed = (a, b) => MILESTONES.filter((m) => a < m && b >= m).pop();
+const short = (n) => n >= 1e9 ? (n / 1e9).toFixed(n >= 1e10 ? 0 : 1).replace(/\.0$/, "") + "B" : n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 0 : 1).replace(/\.0$/, "") + "M" : n >= 1e3 ? (n / 1e3).toFixed(n >= 1e4 ? 0 : 1).replace(/\.0$/, "") + "K" : String(n);
+let trackerBusy = false;
+async function runTracker(force = false) {
+  if (trackerBusy) return;
+  trackerBusy = true;
+  try {
+    const { trk = {}, trkState = {}, timeline = [], myId, rgAlertPrefs = {}, friendSnap } = await get(["trk", "trkState", "timeline", "myId", "rgAlertPrefs", "friendSnap"]);
+    const prefs = { badges: true, invValue: true, invPct: 5, friendNames: true, ...rgAlertPrefs };
+    const now = Date.now(), ev = [];
+    const add = (e) => ev.push({ t: now, ...e });
+
+    // Profiles
+    for (const id of Object.keys(trk.users || {}).slice(0, 40)) {
+      try {
+        const [u, fo, fr] = await Promise.all([
+          api(`https://users.roblox.com/v1/users/${id}`),
+          api(`https://friends.roblox.com/v1/users/${id}/followers/count`).catch(() => ({})),
+          api(`https://friends.roblox.com/v1/users/${id}/friends/count`).catch(() => ({}))
+        ]);
+        const k = "u:" + id, old = trkState[k], cur = { name: u.name, dn: u.displayName, bio: u.description || "", banned: !!u.isBanned, fo: fo.count ?? null, fr: fr.count ?? null };
+        const url = `https://www.roblox.com/users/${id}/profile`, who = u.displayName || u.name;
+        if (old) {
+          if (old.name !== cur.name) add({ kind: "user", id: +id, name: who, text: `changed username from @${old.name} to @${cur.name}`, url, important: true });
+          if (old.dn !== cur.dn) add({ kind: "user", id: +id, name: who, text: `changed display name from "${old.dn}" to "${cur.dn}"`, url, important: true });
+          if (old.bio !== cur.bio) add({ kind: "user", id: +id, name: who, text: "changed their bio", url, detail: cur.bio.slice(0, 200) });
+          if (old.banned !== cur.banned) add({ kind: "user", id: +id, name: who, text: cur.banned ? "was banned" : "was unbanned", url, important: true });
+          if (old.fo != null && cur.fo != null) { const m = crossed(old.fo, cur.fo); if (m) add({ kind: "user", id: +id, name: who, text: `passed ${short(m)} followers`, url }); }
+        }
+        trkState[k] = cur;
+      } catch (e) { /* skip this one */ }
+    }
+
+    // Communities
+    for (const id of Object.keys(trk.groups || {}).slice(0, 40)) {
+      try {
+        const g = await api(`https://groups.roblox.com/v1/groups/${id}`);
+        const k = "g:" + id, old = trkState[k], cur = { name: g.name, owner: g.owner ? g.owner.userId : null, ownerName: g.owner ? g.owner.username : "", members: g.memberCount || 0, shout: (g.shout && g.shout.body) || "" };
+        const url = `https://www.roblox.com/communities/${id}`;
+        if (old) {
+          if (old.owner !== cur.owner) add({ kind: "group", id: +id, name: g.name, text: cur.owner ? `has a new owner: @${cur.ownerName}` : "has no owner any more", url, important: true });
+          if (old.name !== cur.name) add({ kind: "group", id: +id, name: g.name, text: `was renamed from "${old.name}"`, url, important: true });
+          if (old.shout !== cur.shout && cur.shout) add({ kind: "group", id: +id, name: g.name, text: "posted a new shout", url, detail: cur.shout.slice(0, 200) });
+          const m = crossed(old.members, cur.members); if (m) add({ kind: "group", id: +id, name: g.name, text: `passed ${short(m)} members`, url });
+        }
+        trkState[k] = cur;
+      } catch (e) { /* skip */ }
+    }
+
+    // Games
+    const gids = Object.keys(trk.games || {}).slice(0, 50);
+    for (const c of chunks(gids, 50)) {
+      try {
+        const d = await api(`https://games.roblox.com/v1/games?universeIds=${c.join(",")}`);
+        for (const g of d.data || []) {
+          const k = "gm:" + g.id, old = trkState[k], cur = { name: g.name, updated: g.updated, visits: g.visits || 0, playing: g.playing || 0, peak: Math.max(g.playing || 0, (old && old.peak) || 0) };
+          const url = `https://www.roblox.com/games/${g.rootPlaceId}`;
+          if (old) {
+            if (old.updated !== cur.updated) add({ kind: "game", id: g.id, name: g.name, text: "was updated", url });
+            if (old.name !== cur.name) add({ kind: "game", id: g.id, name: g.name, text: `was renamed from "${old.name}"`, url, important: true });
+            const m = crossed(old.visits, cur.visits); if (m) add({ kind: "game", id: g.id, name: g.name, text: `passed ${short(m)} visits`, url, important: true });
+            if (old.peak && cur.playing > old.peak * 1.1 && cur.playing >= 50) add({ kind: "game", id: g.id, name: g.name, text: `hit a new player record: ${cur.playing.toLocaleString()} playing`, url });
+          }
+          trkState[k] = cur;
+          // Events Roblox lists for the game (if any)
+          try {
+            const e = await api(`https://apis.roblox.com/virtual-events/v1/universes/${g.id}/virtual-events?limit=10`);
+            const seen = new Set(trkState["ev:" + g.id] || []);
+            for (const x of e.data || []) {
+              if (!x.id || seen.has(x.id)) continue;
+              if (trkState["ev:" + g.id]) add({ kind: "game", id: g.id, name: g.name, text: `announced an event: ${x.title || x.displayTitle || "Event"}`, url, when: x.eventTime && x.eventTime.startUtc });
+              seen.add(x.id);
+            }
+            trkState["ev:" + g.id] = [...seen].slice(-50);
+          } catch (e) { /* events are optional */ }
+        }
+      } catch (e) { /* skip */ }
+    }
+
+    // Items: RAP moves
+    for (const id of Object.keys(trk.items || {}).slice(0, 40)) {
+      try {
+        const r = await api(`https://economy.roblox.com/v1/assets/${id}/resale-data`);
+        const k = "it:" + id, old = trkState[k], rap = r.recentAveragePrice || 0, it = trk.items[id], pct = it.pct || 10;
+        if (old && old.rap && rap && Math.abs(rap - old.rap) / old.rap * 100 >= pct) {
+          add({ kind: "item", id: +id, name: it.name || "Item", text: `RAP ${rap > old.rap ? "rose" : "fell"} ${Math.round(Math.abs(rap - old.rap) / old.rap * 100)}% to R$${rap.toLocaleString()}`, url: `https://www.roblox.com/catalog/${id}`, important: true });
+          trkState[k] = { rap };
+        } else if (!old) trkState[k] = { rap };
+      } catch (e) { /* skip */ }
+    }
+
+    if (myId) {
+      // New badges you earned
+      if (prefs.badges) try {
+        const d = await api(`https://badges.roblox.com/v1/users/${myId}/badges?limit=25&sortOrder=Desc`);
+        const ids = (d.data || []).map((b) => b.id), seen = trkState.myBadges;
+        if (seen) for (const b of d.data || []) if (!seen.includes(b.id)) add({ kind: "badge", id: b.id, name: b.name, text: `You earned the badge "${b.name}"${b.awarder && b.awarder.name ? "" : ""}`, url: `https://www.roblox.com/badges/${b.id}`, important: true, mine: true });
+        trkState.myBadges = [...new Set([...(seen || []), ...ids])].slice(-300);
+      } catch (e) { /* skip */ }
+
+      // Inventory value (every 12 hours)
+      if (prefs.invValue && (force || !trkState.invT || now - trkState.invT > 12 * 3600e3)) try {
+        let cursor = "", rap = 0;
+        for (let i = 0; i < 20; i++) {
+          const d = await api(`https://inventory.roblox.com/v1/users/${myId}/assets/collectibles?limit=100&sortOrder=Desc${cursor ? "&cursor=" + encodeURIComponent(cursor) : ""}`);
+          (d.data || []).forEach((x) => (rap += x.recentAveragePrice || 0));
+          cursor = d.nextPageCursor; if (!cursor) break;
+        }
+        const old = trkState.inv;
+        if (old && old.rap && Math.abs(rap - old.rap) / old.rap * 100 >= prefs.invPct)
+          add({ kind: "me", id: myId, name: "Your inventory", text: `value ${rap > old.rap ? "went up" : "went down"} ${Math.round(Math.abs(rap - old.rap) / old.rap * 100)}% to R$${rap.toLocaleString()}`, url: `https://www.roblox.com/rogen#inventory`, important: true, mine: true });
+        trkState.inv = { rap }; trkState.invT = now;
+        const hk = "hist:rap:" + myId, h = (await get(hk))[hk] || [];
+        if (!h.length || now - h[h.length - 1].t > 6 * 3600e3) { h.push({ t: now, rap }); await set({ [hk]: h.slice(-400) }); }
+      } catch (e) { /* skip */ }
+
+      // Friends' username / display name changes (every 6 hours)
+      if (prefs.friendNames && friendSnap && friendSnap.owner === myId && (force || !trkState.fnT || now - trkState.fnT > 6 * 3600e3)) try {
+        const prev = trkState.fn || {}, next = {};
+        for (const c of chunks(friendSnap.ids || [], 100)) {
+          const d = await api("https://users.roblox.com/v1/users", { method: "POST", body: { userIds: c, excludeBannedUsers: false } });
+          for (const u of d.data || []) {
+            next[u.id] = [u.name, u.displayName];
+            const o = prev[u.id];
+            if (o && o[0] !== u.name) add({ kind: "friend", id: u.id, name: u.displayName, text: `changed username from @${o[0]} to @${u.name}`, url: `https://www.roblox.com/users/${u.id}/profile`, important: true, mine: true });
+            else if (o && o[1] !== u.displayName) add({ kind: "friend", id: u.id, name: u.displayName, text: `changed display name from "${o[1]}"`, url: `https://www.roblox.com/users/${u.id}/profile`, mine: true });
+          }
+        }
+        trkState.fn = next; trkState.fnT = now;
+      } catch (e) { /* skip */ }
+    }
+
+    await set({ trkState, timeline: [...ev.reverse(), ...timeline].slice(0, 600), trackerLast: now });
+    const loud = ev.filter((e) => e.important);
+    for (const e of loud.slice(0, 4)) await notify(e.name, e.text, e.url);
+    if (loud.length > 4) await notify("RoGen Tracker", `${loud.length - 4} more changes. Open RoGen → Tracker to see them.`, "https://www.roblox.com/rogen#tracker");
+  } finally { trackerBusy = false; }
+}
+chrome.runtime.onMessage.addListener((msg, sender, reply) => {
+  if (msg && msg.type === "runTracker") { runTracker(true).then(() => reply({ ok: true })).catch((e) => reply({ ok: false, reason: String(e.message || e) })); return true; }
+});

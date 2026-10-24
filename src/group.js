@@ -5,7 +5,7 @@
   const groupGames = (gid, filter) =>
     R.pages((c) => `https://games.roblox.com/v2/groups/${gid}/gamesV2?accessFilter=${filter}&limit=100&sortOrder=Desc${c ? `&cursor=${encodeURIComponent(c)}` : ""}`, { max: 20 });
 
-  R.route((p) => /^\/(groups|communities)\/\d+/i.test(p), () => {
+  R.route((p) => R.feat("groupTab") && /^\/(groups|communities)\/\d+/i.test(p), () => {
     const gid = Number(location.pathname.match(/\/(?:groups|communities)\/(\d+)/i)[1]);
     const sec = R.section({
       id: "rg-group",

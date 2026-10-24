@@ -12,7 +12,7 @@
     if (k === lastKey) return;
     lastKey = k;
     active.forEach((a) => { try { a.stop && a.stop(); } catch (e) { /* ignore */ } });
-    active = R.routes.filter((r) => r.test(k)).map((r) => {
+    active = R.routes.filter((r) => R.feat(r.key) && r.test(k)).map((r) => {
       try { return r.fn() || {}; } catch (e) { console.warn("RoGen:", e); return {}; }
     });
   }
@@ -44,6 +44,9 @@
     window.addEventListener("hashchange", schedule);
   }
 
-  if (document.body) boot();
-  else document.addEventListener("DOMContentLoaded", boot);
+  // turning a feature on or off in Settings takes effect straight away
+  R.onFeatures = () => { lastKey = ""; schedule(); };
+  const start = () => R.featReady.then(boot);
+  if (document.body) start();
+  else document.addEventListener("DOMContentLoaded", start);
 })();

@@ -1,6 +1,6 @@
 # RoGen
 
-A free Chrome extension that adds the things Roblox doesn't show you to roblox.com: who unadded you, what you've spent, playtime for you and your friends, game and player insights, a better avatar editor, quick find (Ctrl+K), themes and more.
+A free Chrome extension that adds the things Roblox doesn't show you to roblox.com: who unadded you, what you've spent, playtime for you and your friends, game and player insights, a tracker that tells you when profiles, games or limiteds change, your inventory's value and profit, badges, Wrapped, a better avatar editor, quick find (Ctrl+K), themes and more. Every feature can be turned off in Settings.
 
 **This is the full source code of the extension, exactly as it is installed.** Nothing is minified, bundled or hidden. Every file here is what runs in your browser.
 
@@ -29,7 +29,7 @@ You can check this yourself: search the code for `https://`. There are no analyt
 | Permission | Why |
 |---|---|
 | `storage`, `unlimitedStorage` | Saves your settings, playtime history and unadd list **in your own browser**. It stays on your computer. |
-| `alarms` | Checks for unadds and tracks playtime every few minutes while Chrome is open. |
+| `alarms` | Checks for unadds and tracks playtime every few minutes, and runs the Tracker every 30 minutes, while Chrome is open. |
 | `notifications` | Shows "someone unadded you" and alert pop-ups. |
 | Access to `roblox.com` | So it can add its features to Roblox's pages. |
 

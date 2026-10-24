@@ -38,7 +38,7 @@
   };
 
   /* ---------------- Charts: Roblox Charts ⇄ RoGen Discover ---------------- */
-  R.route((p) => p === "/charts", () => {
+  R.route((p) => R.feat("chartsDiscover") && p === "/charts", () => {
     const KEY = "rgChartsMode";
     let mode = "roblox", built = false;
     try { mode = sessionStorage.getItem(KEY) === "rogen" ? "rogen" : "roblox"; } catch (e) { /* ignore */ }

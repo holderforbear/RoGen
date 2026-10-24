@@ -185,8 +185,9 @@
     document.querySelectorAll(`a[href*="/users/${me.id}/profile"] img, a[href*="/users/${me.id}/"] .avatar-card-image img`).forEach((i) => imgs.add(i));
     if (location.pathname.toLowerCase().startsWith(`/users/${me.id}/`)) document.querySelectorAll(".user-profile-header-details-avatar-container img, .profile-avatar-thumb img").forEach((i) => imgs.add(i));
     document.querySelectorAll(`img[data-thumb="user:${me.id}"]`).forEach((i) => imgs.add(i));
+    const usePfp = pfp && R.feat("pfp");
     imgs.forEach((img) => {
-      if (pfp) {
+      if (usePfp) {
         if (img.src !== pfp) { if (!img.dataset.rgOrig) img.dataset.rgOrig = img.src; img.src = pfp; img.removeAttribute("srcset"); img.classList.add("rg-pfp"); }
       } else if (img.dataset.rgOrig) { img.src = img.dataset.rgOrig; delete img.dataset.rgOrig; img.classList.remove("rg-pfp"); }
     });
@@ -195,7 +196,7 @@
     const holder = nav && (nav.querySelector(".avatar, .avatar-card-image, .thumbnail-2d-container") || nav);
     const live = R.statusLive(status);
     let dot = document.querySelector(".rg-nav-dot");
-    if (!holder || !live || live.state === "invisible") { dot && dot.remove(); return; }
+    if (!R.feat("navDot") || !holder || !live || live.state === "invisible") { dot && dot.remove(); return; }
     if (!dot || !holder.contains(dot)) {
       dot && dot.remove();
       dot = R.h(`<span class="rg-nav-dot" data-edit-status></span>`);
