@@ -353,6 +353,32 @@ chrome.runtime.onMessage.addListener((msg, _s, reply) => {
 /* ---------------- RoGen badges: read the published list, and (owner only) publish it ---------------- */
 const BADGE_OWNER_ID = 10980633414;
 const BADGE_FILE = "badges.json";
+// The owner's announcement, newest version and feature switches ride along in the same published list.
+// Everything is checked and trimmed here, so the list can only ever carry short text, a version number,
+// a link to roblox.com / the Chrome Web Store / Discord / GitHub, and names of RoGen features.
+const LIVE_LINK = /^https:\/\/((www\.)?roblox\.com|chromewebstore\.google\.com|discord\.gg|(www\.)?github\.com)\//i;
+function cleanLive(l) {
+  if (!l || typeof l !== "object") return null;
+  const str = (x, n) => (typeof x === "string" ? x.slice(0, n) : "");
+  const out = { off: Array.isArray(l.off) ? l.off.filter((k) => typeof k === "string" && /^[a-zA-Z:]{2,40}$/.test(k)).slice(0, 60) : [] };
+  const n = l.notice;
+  if (n && typeof n === "object" && str(n.text, 300).trim()) {
+    out.notice = { id: str(n.id, 40) || String(Date.now()), text: str(n.text, 300).trim(), link: LIVE_LINK.test(str(n.link, 300)) ? str(n.link, 300) : "", important: !!n.important, until: Number(n.until) || 0 };
+  }
+  const v = l.latest;
+  if (v && typeof v === "object" && /^\d+(\.\d+){0,3}$/.test(str(v.version, 20))) out.latest = { version: str(v.version, 20), note: str(v.note, 200), link: LIVE_LINK.test(str(v.link, 300)) ? str(v.link, 300) : "" };
+  return out;
+}
+async function applyLive(live) {
+  const { rgLive, noticeNotified } = await get(["rgLive", "noticeNotified"]);
+  if (JSON.stringify(rgLive || null) !== JSON.stringify(live || null)) await set({ rgLive: live || null });
+  const n = live && live.notice;
+  if (n && n.important && (!n.until || n.until > Date.now()) && noticeNotified !== n.id) {
+    await set({ noticeNotified: n.id });
+    notify("RoGen", n.text, n.link || "https://www.roblox.com/rogen#dashboard");
+  }
+}
+
 async function fetchBadgeFeed(url) {
   if (!/^https:\/\/(raw\.githubusercontent\.com|gist\.githubusercontent\.com|[a-z0-9-]+\.github\.io)\//i.test(url)) return { ok: false, reason: "Use a raw GitHub link (raw.githubusercontent.com, gist.githubusercontent.com or a github.io page)." };
   // cache-buster so a change shows up within a minute instead of GitHub's ~5 minute cache
@@ -367,6 +393,7 @@ async function fetchBadgeFeed(url) {
   const { badgeFeed } = await get("badgeFeed");
   const same = badgeFeed && badgeFeed.url === url && JSON.stringify(badgeFeed.grants) === JSON.stringify(grants);
   if (!same) await set({ badgeFeed: { at: Date.now(), url, grants } });
+  await applyLive(cleanLive(j && j.live));
   return { ok: true, count: Object.keys(grants).length, changed: !same };
 }
 const ghHeaders = (token) => ({ Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28", "Content-Type": "application/json" });

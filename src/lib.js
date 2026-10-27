@@ -470,9 +470,16 @@
     ["Getting around", "backToTop", "Back to top button", "A button to jump back up on long pages", false]
   ];
   R.FEATURE_DEFAULTS = Object.fromEntries(R.FEATURES.map((f) => [f[1], f[4]]));
-  let featCache = {};
-  R.feat = (key) => !key || (key in featCache ? featCache[key] !== false : R.FEATURE_DEFAULTS[key] !== false);
-  R.featReady = new Promise((res) => chrome.storage.local.get("rgFeatures", (v) => { featCache = (v && v.rgFeatures) || {}; res(); }));
-  chrome.storage.onChanged.addListener((ch) => { if (ch.rgFeatures) { featCache = ch.rgFeatures.newValue || {}; R.onFeatures && R.onFeatures(); } });
+  let featCache = {}, liveOff = new Set();
+  // the owner can switch a feature off for everyone (for when a Roblox change breaks it); that wins over your own switch
+  R.feat = (key) => !key || (!liveOff.has(key) && (key in featCache ? featCache[key] !== false : R.FEATURE_DEFAULTS[key] !== false));
+  R.featOffByOwner = (key) => liveOff.has(key);
+  const setLive = (l) => { liveOff = new Set(((l && l.off) || []).filter((k) => typeof k === "string")); };
+  R.featReady = new Promise((res) => chrome.storage.local.get(["rgFeatures", "rgLive"], (v) => { featCache = (v && v.rgFeatures) || {}; setLive(v && v.rgLive); res(); }));
+  chrome.storage.onChanged.addListener((ch) => {
+    if (ch.rgFeatures) featCache = ch.rgFeatures.newValue || {};
+    if (ch.rgLive) setLive(ch.rgLive.newValue);
+    if (ch.rgFeatures || ch.rgLive) R.onFeatures && R.onFeatures();
+  });
   R.setFeat = async (key, on) => { const all = await R.get1("rgFeatures", {}); all[key] = !!on; await R.set({ rgFeatures: all }); };
 })();

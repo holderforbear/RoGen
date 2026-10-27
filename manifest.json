@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "RoGen",
-  "version": "4.9.3",
+  "version": "4.9.4",
   "description": "Unadd tracker, spending stats, server browser, game history, hidden group games, themes and RoGen badges for Roblox.",
   "permissions": [
     "storage",
@@ -70,6 +70,7 @@
         "src/avatar.js",
         "src/hub.js",
         "src/hubviews.js",
+        "src/owner.js",
         "src/page.js",
         "src/playtime.js",
         "src/places.js",

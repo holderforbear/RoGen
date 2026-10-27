@@ -1,3 +1,12 @@
+# RoGen 4.9.4
+
+## Owner tools (only RoGen's owner sees these)
+- **Announcements.** Write a message, add a link if you want, and send it to every RoGen. It shows at the top of every RoGen page and once in the corner of Roblox. Important ones also send a notification. Choose how long it stays (until you remove it, 1 day, 3 days or a week).
+- **Update notice.** Set the newest version and anyone on an older one sees "RoGen X is out" with a button to the Chrome Web Store.
+- **Switch a feature off for everyone,** for when a Roblox change breaks something. It shows greyed out in people's Settings until you turn it back on.
+- **Housekeeping:** push everything now, run the tracker, clear cached rankings, and see how much space RoGen uses.
+- It all goes out through the badge list you already publish, so there's still no server. RoGen only accepts short text, a version number, links to Roblox, the Chrome Web Store, Discord or GitHub, and names of RoGen features from that list.
+
 # RoGen 4.9.3
 
 - **Panel color only colors the UI now.** Cards, Roblox's panels, the top bar, Roblox's left menu, RoGen's sidebar and menus get the color. Your background shows between them, with no big tinted sheet over the whole page.

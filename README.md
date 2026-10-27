@@ -19,7 +19,7 @@ You don't have to take our word for it. Here is everything RoGen can do, and whe
 | Website | Why |
 |---|---|
 | `*.roblox.com` | Everything RoGen shows: friends, games, inventory, avatar, catalog, thumbnails. These are Roblox's own servers. |
-| `gist.githubusercontent.com`, `raw.githubusercontent.com` | Downloads the public list of RoGen badges (a plain text list of Roblox user IDs). |
+| `gist.githubusercontent.com`, `raw.githubusercontent.com` | Downloads the public list of RoGen badges (a plain text list of Roblox user IDs) and, in the same file, short notices from the owner such as "a new version is out" or a feature switched off because a Roblox change broke it. |
 | `api.github.com` | Only used by the RoGen owner to publish that badge list. Normal users never send anything here. |
 
 You can check this yourself: search the code for `https://`. There are no analytics, no trackers, no ads, and no servers of our own.

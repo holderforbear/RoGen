@@ -369,8 +369,8 @@
     const on = (k) => (k in cur ? cur[k] !== false : R.FEATURE_DEFAULTS[k] !== false);
     const groups = {};
     R.FEATURES.forEach(([g, k, label, desc]) => (groups[g] = groups[g] || []).push([k, label, desc]));
-    const pages = R.VIEWS.filter(([id]) => !["#", "-"].includes(id[0]) && !["dashboard", "settings", "badges"].includes(id));
-    const sw = (k, label, desc) => `<label class="ft-row"><span class="ft-t"><b>${R.esc(label)}</b>${desc ? `<small>${R.esc(desc)}</small>` : ""}</span><span class="ft-sw"><input type="checkbox" data-f="${k}" ${on(k) ? "checked" : ""}><i></i></span></label>`;
+    const pages = R.VIEWS.filter(([id]) => !["#", "-"].includes(id[0]) && !["dashboard", "settings", "badges", "owner"].includes(id));
+    const sw = (k, label, desc) => { const ow = R.featOffByOwner(k); return `<label class="ft-row ${ow ? "ow-off" : ""}"><span class="ft-t"><b>${R.esc(label)}</b>${ow ? `<small>Turned off by RoGen's owner for now, usually while a Roblox change gets fixed</small>` : desc ? `<small>${R.esc(desc)}</small>` : ""}</span><span class="ft-sw"><input type="checkbox" data-f="${k}" ${on(k) && !ow ? "checked" : ""} ${ow ? "disabled" : ""}><i></i></span></label>`; };
     const box = R.h(`<div class="rg-section section" id="features"><div class="container-header rg-head"><h2>Features</h2><div class="rg-head-right"><button class="btn-control-sm ft-simple">Simple mode</button><button class="btn-control-sm ft-all">Turn everything on</button></div></div>
       <div class="section-content rg-body"><p class="rg-note" style="margin-top:0">Turn off anything you don't use. Changes apply straight away. Simple mode keeps the main things and turns off the extras.</p>
         <div class="ft-grid">${Object.entries(groups).map(([g, l]) => `<div class="ft-col"><div class="rg-h3">${R.esc(g)}</div>${l.map(([k, a, d]) => sw(k, a, d)).join("")}</div>`).join("")}

@@ -110,7 +110,8 @@
       const grants = {};
       Object.entries(local).forEach(([id, v]) => { const l = clean(v.b); if (l.length) grants[id] = l; });
       Object.entries(fileList()).forEach(([id, v]) => { const l = clean([...(grants[id] || []), ...(Array.isArray(v) ? v : [])]); if (l.length) grants[id] = l; });   // include the built-in list
-      return { app: "RoGen badges", version: 1, owner: OWNER_ID, updated: Date.now(), grants };
+      const live = await R.get1("ownerLive", null);   // announcement, newest version, features switched off for everyone
+      return { app: "RoGen badges", version: 1, owner: OWNER_ID, updated: Date.now(), grants, ...(live ? { live } : {}) };
     },
     importObj: async (obj, { replace = false, noPublish = false } = {}) => {
       needOwner(); await ready;
@@ -166,6 +167,7 @@
       return { id: gid, rawUrl: raw };
     },
     disconnect: async () => { needOwner(); await R.set({ badgeGist: null }); },
+    publishSoon: () => schedulePublish(),
     // Anyone (not just the owner) can set the list link, so a friend can fix "I can't see badges" without editing files
     setMyFeedUrl: async (url) => { feedUrl = (url || "").trim(); await R.set({ badgeFeedUrl: feedUrl }); },
     setFeedUrl: async (url) => { needOwner(); feedUrl = (url || "").trim(); await R.set({ badgeFeedUrl: feedUrl }); }

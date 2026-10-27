@@ -26,6 +26,7 @@
     ["tools", "Tools"],
     ["#owner", "Owner"],
     ["badges", "Badge manager"],
+    ["owner", "Owner tools"],
     ["-"],
     ["settings", "Settings"]
   ];
@@ -955,6 +956,7 @@
   const RENDER = { dashboard, discover, search, spending, playtime, friends, library, items, alerts, tools, settings, ...(R.extraViews || {}) };
   R.views = RENDER;   // other Roblox pages reuse these (see places.js)
 const ICONS = {
+    owner: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z"/></svg>`,
     badges: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z"/></svg>`,
     lookup: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>`,
     dashboard: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>`,
@@ -995,7 +997,7 @@ const ICONS = {
   // roblox.com/rogen  (Roblox shows an empty Charts page there, RoGen replaces it)
   // the sidebar, without pages you turned off in Settings → Features (and without empty group labels)
   const sideViews = () => {
-    const l = VIEWS.filter(([id]) => ((id !== "badges" && id !== "#owner") || R.badges.isOwner()) && (id[0] === "#" || id === "-" || R.feat("view:" + id)));
+    const l = VIEWS.filter(([id]) => (!["badges", "owner", "#owner"].includes(id) || R.badges.isOwner()) && (id[0] === "#" || id === "-" || R.feat("view:" + id)));
     return l.filter(([id], i) => id[0] !== "#" || (l[i + 1] && l[i + 1][0][0] !== "#" && l[i + 1][0] !== "-"));
   };
   R.VIEWS = VIEWS;
